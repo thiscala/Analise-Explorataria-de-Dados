@@ -1,0 +1,10 @@
+Oi professor, tudo bem? 
+
+Como o senhor pode ter percebido, existe um erro presente no meio do pdf(logo acima do primeiro grafico).
+Esse erro ocorreu devido a biblioteca dplyr e não consegui descobrir como tira-lo. 
+Segui diversas dicas na internet como usar "options(dplyr.summarise.inform = FALSE)" e results="hide" ou eval=FALSE dentro da chunk.
+Não obtive sucesso e o erro permaneceu. 
+
+Obrigado pela atenção. 
+
+Thiago Scala

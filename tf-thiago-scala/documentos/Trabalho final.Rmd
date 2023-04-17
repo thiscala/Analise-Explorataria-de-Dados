@@ -1,0 +1,144 @@
+---
+title: "AED - Covid em Bauru"
+author: "Thiago Esteves La Scala"
+date: "13/03/2022"
+output: pdf_document
+---
+Esse projeto foi proposto com o objetivo de realizar uma  Análise Exploratória de Dados (AED) para compreender como a pandemia do novo coronavírus afetou a cidade de Bauru nos seguintes casos:
+
+- Distribuição dos óbitos de acordo com a idade dos pacientes;
+
+- Verificar quais as características das comorbidades dos óbitos;
+
+- Variação periódica de tais óbitos;
+
+- Tipos e tempo de permanência hospitalar;
+
+- Relação entre óbitos ocorridos e a vacinação dos falecidos.
+
+Os dados aqui apresentados foram obtidos através de reportagens publicadas nos anos de 2020 e 2022 no periódico “Jornal da Cidade”, editado na cidade de Bauru, interior do Estado de São Paulo (https://www.jcnet.com.br/) e representam uma síntese dos dados divulgados pela Prefeitura Municipal de Bauru (https://www2.bauru.sp.gov.br/coronavirus/) nos seus informes epidemiológicos.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+\newpage
+## Distribuição dos óbitos de acordo com a idade.
+
+O gráfico abaixo mostra os óbitos de acordo com a idade dos pacientes da cidade de Bauru.
+
+```{r distribuicao-idades, echo = FALSE,warning = FALSE, error=FALSE}
+library(readxl)
+library(dplyr)
+
+planilha_mortes <- read_excel("../dados/covid_19_bauru_mortes.xlsx",col_types = c("date", "text", "numeric", "date", "text", "text", "date", "numeric"))
+
+idades <- planilha_mortes$'idade'
+
+hist(idades, main = "Distribuicao de acordo com as idades dos pacientes.", xlab = "Idade", ylab= "Frequencia", col=rgb(0.5,0.4,0.7,0.1))
+grid(nx=NA, ny=NULL)
+hist(idades, main = "Distribuicao de acordo com as idades dos pacientes.", xlab = "Idade", ylab= "Frequencia", col=rgb(0.5,0.4,0.7,0.1),add = TRUE)
+
+```
+
+Pode-se perceber que a grande maioria dos óbitos ocorreu na população idosa (mais de 60 anos), sendo que a maior quantidade de óbitos em uma faixa etária foi entre 70 e 80 anos. As idades menos afetadas foram de 0 a 20 anos.
+
+\newpage
+## Comorbidades apresentadas pelos pacientes.
+
+Ao analizar os dados dos pacientetes, é possivel perceber que certas comorbidades estão mais presentes que outras. A seguir estão representadas as 10 comorbidades mais comuns encontradas nos pacientes que foram a óbito.
+
+```{r comorbidades_obitos, echo=FALSE,warning = FALSE}
+comorbidades <- c(planilha_mortes$comorbidade[complete.cases(planilha_mortes$comorbidade)])
+separados <- strsplit(comorbidades," e ")
+vetor_com <- unlist(separados)
+tabela_com <- as.data.frame(table(vetor_com))
+tabela_com <- tabela_com[with(tabela_com,order(-Freq)),]
+tabela_com <- tabela_com[1:10,]
+
+par(mgp=c(1,1,0))
+barplot(tabela_com$Freq,las=2, main ="Comorbidades dos obitos", names.arg = tabela_com$vetor_com, ylim=c(0, 400) ,cex.names = 0.3, xaxs = "i", col = rainbow(30))
+grid(nx=NA, ny=NULL)
+barplot(tabela_com$Freq,las=2, main ="Comorbidades dos obitos", names.arg = tabela_com$vetor_com, ylim=c(0, 400) ,cex.names = 0.3, xaxs = "i", col = rainbow(30),add = TRUE)
+
+```
+
+
+No gráfico, o eixo X representa as comorbidades encontradas e o eixo y representa a quantidade de pacientes que as possuiam.
+
+Observa-se que as comorbidades mais presentes em conjunto com os óbitos são a diabetes (382 casos) e a hipertensão (338 casos). 
+
+Dentre as comorbidades analisadas, as menos presentes são asma (37 casos) e câncer (22 casos).
+
+\newpage
+## Variação periódica dos óbitos
+
+O gráfico abaixo representa a quantidade de óbitos diários devido ao covid-19.
+
+O pico de morte diárias se deu no dia 29-03-2021, com 14 óbitos, após um crescimento brusco dos números. 
+
+Após o pico, a quantidade de óbitos cai lentamente, voltando a se erguer em 31-01-2022, chegando a 8. Isso se repete no dia 02-02-2022 mas depois disso os números voltam a cair.
+
+```{r Obitos_data, echo=FALSE,warning = FALSE}
+data_morte <- subset(planilha_mortes, data_obito >= "2020-07-09")
+data_morte <- table(data_morte$data_obito)
+plot(data_morte, type="l",las = 2, col="red", ylab = "Obitos", main = "Obitos por covid em Bauru")
+
+```
+
+
+
+\newpage
+## Tipos e tempo de permaneicia hospitalar
+
+O gráfico a seguir mostra a distribuição de pacientes com covid-19 que foram a óbito entre hospitais privados e públicos.
+
+Como visível no gráfico, a distribuição foi bem desigual, com 726 pacientes estando na rede pública de saúde e quase metade deste número na rede privada (375).
+
+```{r permanencia_hospitalar_tipo, echo=FALSE,warning = FALSE, error=FALSE}
+hosp_priv <- planilha_mortes %>% filter(tipo_hosp=="privado")
+hosp_publi <- planilha_mortes %>% filter(tipo_hosp=="público")
+inicio_priv <- hosp_priv$'inicio_sintoma'
+fim_priv <- hosp_priv$'data_obito'
+dias_priv <- difftime(as.Date(fim_priv), as.Date(inicio_priv), units = "days")
+dias_priv <- na.omit(dias_priv)
+dias_priv[dias_priv < 0] = 0
+media_priv <- mean(dias_priv)
+inicio_publi <- hosp_publi$'inicio_sintoma'
+fim_publi <- hosp_publi$'data_obito'
+dias_publi <- difftime(as.Date(fim_publi), as.Date(inicio_publi), units = "days")
+dias_publi <- na.omit(dias_publi)
+dias_publi[dias_publi < 0] = 0
+media_publi <- mean(dias_publi)
+hospitais <- planilha_mortes$'tipo_hosp'
+tabela_hosp <- table(hospitais)
+pie(tabela_hosp, main = "Tipos de permanencia hospitalar",col = c("#963939", "#403d3d"))
+
+```
+
+Segundo as informações de data de início dos sintomas (assumindo-se esta data como a de admissão do paciente no hospital) e data de óbito de cada paciente, pode-se observar que a média de tempo de permanencia de pacientes é bem próxima para os dois tipos de estabelecimento médico: nos hospitais privados a média de permanência é de 20 dias e nos hospitais públicos ela tem o valor de 21 dias.
+
+```{r permanencia_hospitalar_tempo, echo=FALSE,warning = FALSE, error=FALSE}
+medias_hosp <- c(media_priv, media_publi)
+barplot(as.vector(medias_hosp), main="Tempo medio de permanencia hospitalar", xlab="Tipos de permanencia", ylab="Media de dias da permanencia", names.arg = c ("Privado", "Publico"),ylim=c(0, 30), cex.names = 0.8, xaxs = "i", col=rainbow(25))
+
+```
+
+\newpage
+## Relação entre vacinação e óbitos
+
+O gráfico abaixo representa a relação entre a quantidade de doses de vacina contra covid-19 que os pacientes que vieram a óbito tinham tomado no momento da internação.
+
+O gráfico analisa apenas 127 pacientes, dos 1.129 registrados, já que a grande maioria deles (1.002) não apresentava nenhuma informação quanto ao estado de vacinação.
+
+```{r vacinacao_obito, echo=FALSE,warning = FALSE}
+doses_tomadas <- planilha_mortes$'doses_vacina'
+tabela_vacinas <- as.data.frame(table(doses_tomadas))
+barplot(tabela_vacinas$Freq, main ="Relacao entre doses tomadas da vacina e obitos", xlab = "Doses tomadas", ylab = "Obitos", names.arg = tabela_vacinas$doses_tomadas, ylim=c(0, 70) ,cex.names = 0.8, xaxs = "i", col = rainbow(10))
+
+```
+
+A maior quantidade de óbitos se deu entre os pacientes que já contavam com 2 ou 3 doses da vacina.
+
+A menor quantidade de óbitos foi de pacientes com apenas 1 dose, seguidos dos pacientes com 0 doses.
+
+A quantidade de dados sobre a vacinação dos pacientes é muito pequena, se comparada ao total, não sendo possível chegar a nenhuma conclusão com sua análise.
